@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <mpi.h>
+#include <omp.h>
+
+#define threadCount 5
 
 void readInMatrix(char *fileName, double *Arr[], double Ans[]);
 void sendRecieveDebug(double **Arr, int size, int rank, MPI_Comm comm, int np);
@@ -35,7 +38,6 @@ int main(){
    /* Send and recieve size to every other process */
    MPI_Bcast(&size, 1, MPI_INT, 0, comm);
 
-   printf("here!\n");
    /* Allocate the arrays */
    double Ans[size];
    double **Arr = (double **) malloc(size * sizeof(double *));
@@ -54,23 +56,10 @@ int main(){
       MPI_Bcast(Arr[i], size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
    }
 
-   /*
-   if(rank != 0){
-      MPI_Send(&Arr[2][1], 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-   } else {
-      double notused;
-      MPI_Recv(&notused, 1, MPI_DOUBLE, 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      printf("Recieved: %lf\n", notused);
-   }
-   */
-
    for(i = 0; i < size; i++){
       Ans[i] = 0;
    }
    
-   if(rank == 0){
-      printf("here!\n");
-   }
    /* Print answers */
    ParallelJacobian(Arr, Ans, size, tolerance, comm_sz, rank, comm);
 
@@ -79,7 +68,6 @@ int main(){
    /* Print answers */
    if(rank == 0){
       print1DArray(Ans, size);
-      printf("The journey is done!\n");
    }
 
    MPI_Barrier(MPI_COMM_WORLD);
@@ -114,9 +102,6 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    int start, end;
    int average = n / np;
 
-   if(rank == 0){
-      printf("starting code!\n");
-   }
    start = average * rank + (n % np > rank ? rank : n % np);
    end = start + average + (n % np > rank ? 1 : 0);
 
@@ -125,12 +110,14 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    double allAns[n];
 
    MPI_Barrier(MPI_COMM_WORLD);
+   #pragma omp parralel num_threads(threadCount)
    do {
       /*
       if(rank == 0){
          print1DArray(Ans, n);
       }
       */
+      # pragma omp for
       for(i = start; i < end; i++){
          allAns[i] = 0;
          for(j = 0; j < n; j++){
@@ -143,6 +130,8 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
       }
 
       /* Send all your answers to the root node and recieve their answers */
+      /* Not positive this is risk free */
+      # pragma omp for
       for(i = 0; i < np; i++){
          MPI_Bcast((allAns + (average * i + (n % np > i ? i : n % np))),
           average + (n % np > i ? 1 : 0),
@@ -152,9 +141,6 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    } while(!checkTolerance(tolerance, Ans, allAns, n));
    MPI_Barrier(MPI_COMM_WORLD);
 
-   if(rank == 0){ 
-      printf("Exiting parallel\n");
-   }
    return;
 }
 
