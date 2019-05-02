@@ -5,7 +5,7 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define threadCount 5
+#define threadCount 25
 
 void readInMatrix(char *fileName, double *Arr[], double Ans[]);
 double RelDif(double a, double b);
@@ -98,9 +98,7 @@ void sendRecieveDebug(double **Arr, int size, int rank, MPI_Comm comm, int np){
 }
 
 void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np, int rank, MPI_Comm comm){
-   int i, j;
    int toleranceMet;
-   double gap;
    int start, end;
    int average = n / np;
    int numRuns = 0;
@@ -113,10 +111,13 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    double allAns[n];
 
    MPI_Barrier(MPI_COMM_WORLD);
+   int i, j;
+   double gap;
    do {
       if(rank == 0){
    //      print1DArray(Ans, n);
       }
+      # pragma omp for
       for(i = start; i < end; i++){
          allAns[i] = 0;
          for(j = 0; j < n; j++){
@@ -137,16 +138,15 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
       }
       MPI_Barrier(MPI_COMM_WORLD);
 
-      toleranceMet = 0;
+      toleranceMet = 1;
+      # pragma omp for
       for(i = 0; i < n; i++){
          gap = fabs(allAns[i] - Ans[i]);
-         if(RelDif(allAns[i], Ans[i]) <= tolerance){
-            toleranceMet++;
+         if(!RelDif(allAns[i], Ans[i]) <= tolerance){
+            #pragma omp critical
+            toleranceMet = 0;
          }
          Ans[i] = allAns[i];
-      }
-      if(tolerance != n){
-         tolerance = 0;
       }
 
       numRuns++;
