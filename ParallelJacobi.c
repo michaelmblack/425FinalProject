@@ -5,7 +5,7 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define threadCount 25
+#define threadCount 3
 
 void readInMatrix(char *fileName, double *Arr[], double Ans[]);
 double RelDif(double a, double b);
@@ -98,10 +98,12 @@ void sendRecieveDebug(double **Arr, int size, int rank, MPI_Comm comm, int np){
 }
 
 void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np, int rank, MPI_Comm comm){
-   int toleranceMet;
    int start, end;
    int average = n / np;
    int numRuns = 0;
+   int toleranceMet;
+   int i, j;
+   double gap;
 
    start = average * rank + (n % np > rank ? rank : n % np);
    end = start + average + (n % np > rank ? 1 : 0);
@@ -111,13 +113,8 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    double allAns[n];
 
    MPI_Barrier(MPI_COMM_WORLD);
-   int i, j;
-   double gap;
    do {
-      if(rank == 0){
-   //      print1DArray(Ans, n);
-      }
-      # pragma omp for
+      #pragma omp parallel for num_threads(threadCount) default(none) shared(A, Ans, tolerance, n, np, rank, comm, start, end, average, numRuns, count, allAns, toleranceMet, gap) private(i, j)
       for(i = start; i < end; i++){
          allAns[i] = 0;
          for(j = 0; j < n; j++){
@@ -129,8 +126,10 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
          }
       }
 
+
       /* Send all your answers to the root node and recieve their answers */
       /* Not positive this is risk free */
+      // #pragma omp parallel for num_threads(threadCount) default(none) shared(A, Ans, tolerance, n, np, rank, comm, start, end, average, numRuns, count, allAns, toleranceMet, gap, j) private(i) schedule(static)
       for(i = 0; i < np; i++){
          MPI_Bcast((allAns + (average * i + (n % np > i ? i : n % np))),
           average + (n % np > i ? 1 : 0),
@@ -138,8 +137,9 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
       }
       MPI_Barrier(MPI_COMM_WORLD);
 
+
       toleranceMet = 1;
-      # pragma omp for
+      #pragma omp parallel for num_threads(threadCount) default(none) shared(A, Ans, tolerance, n, np, rank, comm, start, end, average, numRuns, count, allAns, toleranceMet, j) private(i, gap)
       for(i = 0; i < n; i++){
          gap = fabs(allAns[i] - Ans[i]);
          if(!RelDif(allAns[i], Ans[i]) <= tolerance){
@@ -149,7 +149,10 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
          Ans[i] = allAns[i];
       }
 
+
+      {
       numRuns++;
+      }
    } while(!toleranceMet && numRuns < 1000);
    if(rank == 0){
       printf("%d\n", numRuns);
