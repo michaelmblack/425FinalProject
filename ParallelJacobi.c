@@ -113,7 +113,7 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    MPI_Barrier(MPI_COMM_WORLD);
    do {
       if(rank == 0){
-         //print1DArray(Ans, n);
+         print1DArray(Ans, n);
       }
       for(i = start; i < end; i++){
          allAns[i] = 0;
@@ -138,7 +138,10 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
       toleranceMet = 1;
       for(i = 0; i < n; i++){
          gap = fabs(allAns[i] - Ans[i]);
-         if(gap < tolerance){
+         if(gap > tolerance){
+            if(rank == 0){
+               printf("TRUE: %d %d\n", allAns[i], Ans[i]);
+            }
             toleranceMet = 0;
          }
          Ans[i] = allAns[i];
