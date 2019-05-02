@@ -8,6 +8,7 @@
 #define threadCount 5
 
 void readInMatrix(char *fileName, double *Arr[], double Ans[]);
+double RelDif(double a, double b);
 void sendRecieveDebug(double **Arr, int size, int rank, MPI_Comm comm, int np);
 int checkTolerance(double tolerance, double *A, double *B, int size);
 void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np, int rank, MPI_Comm comm);
@@ -26,7 +27,7 @@ int main(){
    char *fileName = "array.txt";
    MPI_Comm comm;
 
-   int tolerance = 0.001;
+   double tolerance = 0.0001;
 
    comm = MPI_COMM_WORLD;
    MPI_Comm_size(comm, &comm_sz);
@@ -136,23 +137,35 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
       }
       MPI_Barrier(MPI_COMM_WORLD);
 
-      toleranceMet = 1;
+      toleranceMet = 0;
       for(i = 0; i < n; i++){
          gap = fabs(allAns[i] - Ans[i]);
-         if(! (gap <= tolerance)){
-            if(rank == 0){
-     //          printf("TRUE: %lf %lf %lf\n", allAns[i], Ans[i], gap);
-            }
-            toleranceMet = 0;
+         if(RelDif(allAns[i], Ans[i]) <= tolerance){
+            toleranceMet++;
          }
          Ans[i] = allAns[i];
+      }
+      if(tolerance != n){
+         tolerance = 0;
       }
 
       numRuns++;
    } while(!toleranceMet && numRuns < 1000);
+   if(rank == 0){
+      printf("%d\n", numRuns);
+   }
    MPI_Barrier(MPI_COMM_WORLD);
 
    return;
+}
+
+double RelDif(double a, double b){
+   double c = ((a) < 0 ? -(a) : (a));
+   double d = ((a) < 0 ? -(a) : (a));
+   
+   d = ((c) > (d) ? (c) : (d));
+
+   return d == 0.0 ? 0.0 : (((a-b) < 0 ? -1 * (a-b) : a-b)) / d;
 }
 
 
