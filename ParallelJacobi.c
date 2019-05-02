@@ -5,16 +5,16 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define threadCount 3
+#define threadCount 5
 
-void readInMatrix(char *fileName, double *Arr[], double Ans[]);
-double RelDif(double a, double b);
-void sendRecieveDebug(double **Arr, int size, int rank, MPI_Comm comm, int np);
-int checkTolerance(double tolerance, double *A, double *B, int size);
-void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np, int rank, MPI_Comm comm);
-void print1DArray(double *A, int size);
-void print2DArray(double **A, int size);
-void reArrangeArray(double **A, double *B, int size);
+void readInMatrix(char *fileName, long double *Arr[], long double Ans[]);
+long double RelDif(long double a, long double b);
+void sendRecieveDebug(long double **Arr, int size, int rank, MPI_Comm comm, int np);
+int checkTolerance(long double tolerance, long double *A, long double *B, int size);
+void ParallelJacobian(long double *A[], long double Ans[], int n, long double tolerance, int np, int rank, MPI_Comm comm);
+void print1DArray(long double *A, int size);
+void print2DArray(long double **A, int size);
+void reArrangeArray(long double **A, long double *B, int size);
 int getSize(char *fileName);
 
 
@@ -27,7 +27,7 @@ int main(){
    char *fileName = "array.txt";
    MPI_Comm comm;
 
-   double tolerance = 0.0001;
+   long double tolerance = 0.0001;
 
    comm = MPI_COMM_WORLD;
    MPI_Comm_size(comm, &comm_sz);
@@ -41,10 +41,10 @@ int main(){
    MPI_Bcast(&size, 1, MPI_INT, 0, comm);
 
    /* Allocate the arrays */
-   double Ans[size];
-   double **Arr = (double **) malloc(size * sizeof(double *));
+   long double Ans[size];
+   long double **Arr = (long double **) malloc(size * sizeof(long double *));
    for(i = 0; i < size; i++){
-      Arr[i] = (double *) malloc(size * sizeof(double));
+      Arr[i] = (long double *) malloc(size * sizeof(long double));
    }
 
    if(rank == 0){
@@ -55,7 +55,7 @@ int main(){
 
    MPI_Barrier(MPI_COMM_WORLD);
    for(i = 0; i < size; i++){
-      MPI_Bcast(Arr[i], size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      MPI_Bcast(Arr[i], size, MPI_LONG_DOUBLE, 0, MPI_COMM_WORLD);
    }
 
    for(i = 0; i < size; i++){
@@ -84,7 +84,7 @@ int main(){
    return 0;
 }
 
-void sendRecieveDebug(double **Arr, int size, int rank, MPI_Comm comm, int np){
+void sendRecieveDebug(long double **Arr, int size, int rank, MPI_Comm comm, int np){
    MPI_Barrier(MPI_COMM_WORLD);
    int i;
    if(rank != 0){
@@ -97,20 +97,20 @@ void sendRecieveDebug(double **Arr, int size, int rank, MPI_Comm comm, int np){
    }
 }
 
-void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np, int rank, MPI_Comm comm){
+void ParallelJacobian(long double *A[], long double Ans[], int n, long double tolerance, int np, int rank, MPI_Comm comm){
    int start, end;
    int average = n / np;
    int numRuns = 0;
    int toleranceMet;
    int i, j;
-   double gap;
+   long double gap;
 
    start = average * rank + (n % np > rank ? rank : n % np);
    end = start + average + (n % np > rank ? 1 : 0);
 
    int count = end - start;
 
-   double allAns[n];
+   long double allAns[n];
 
    MPI_Barrier(MPI_COMM_WORLD);
    do {
@@ -133,7 +133,7 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
       for(i = 0; i < np; i++){
          MPI_Bcast((allAns + (average * i + (n % np > i ? i : n % np))),
           average + (n % np > i ? 1 : 0),
-          MPI_DOUBLE, i, MPI_COMM_WORLD);
+          MPI_LONG_DOUBLE, i, MPI_COMM_WORLD);
       }
       MPI_Barrier(MPI_COMM_WORLD);
 
@@ -162,9 +162,9 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    return;
 }
 
-double RelDif(double a, double b){
-   double c = ((a) < 0 ? -(a) : (a));
-   double d = ((a) < 0 ? -(a) : (a));
+long double RelDif(long double a, long double b){
+   long double c = ((a) < 0 ? -(a) : (a));
+   long double d = ((a) < 0 ? -(a) : (a));
    
    d = ((c) > (d) ? (c) : (d));
 
@@ -173,10 +173,10 @@ double RelDif(double a, double b){
 
 
 /* A = old Answers, B = new Answers */
-int checkTolerance(double tolerance, double *A, double *B, int size){
+int checkTolerance(long double tolerance, long double *A, long double *B, int size){
    int i;
    int isDone = 1;
-   double gap;
+   long double gap;
    for(i = 0; i < size; i++){
       gap = A[i] - B[i];
       gap = (gap > 0 ? gap : gap * -1);
@@ -200,7 +200,7 @@ int getSize(char *fileName){
    return size;
 }
 
-void readInMatrix(char *fileName, double *Arr[], double Ans[]){
+void readInMatrix(char *fileName, long double *Arr[], long double Ans[]){
    FILE *fp;
    int size, i, j;
    fp = fopen(fileName, "r");
@@ -213,19 +213,19 @@ void readInMatrix(char *fileName, double *Arr[], double Ans[]){
 
    for(i = 0; i < size; i++){
       for(j = 0; j < size; j++){
-         fscanf(fp, "%lf", &Arr[i][j]);
+         fscanf(fp, "%llf", &Arr[i][j]);
       }
    }
    for(i = 0; i < size; i++){
-      fscanf(fp, "%lf", &Ans[i]);
+      fscanf(fp, "%llf", &Ans[i]);
    }
 
    fclose(fp);
 }
 
-void reArrangeArray(double **A, double *B, int size){
+void reArrangeArray(long double **A, long double *B, int size){
    int i, j;
-   double divideBy;
+   long double divideBy;
    for(i = 0; i < size; i++){
       divideBy = A[i][i];
       A[i][i] = B[i] * -1;
@@ -235,21 +235,21 @@ void reArrangeArray(double **A, double *B, int size){
    }
 }
 
-void print1DArray(double *A, int size){
+void print1DArray(long double *A, int size){
    int j; 
    printf("\n");
    for(j = 0; j < size; j++){
-      printf("%lf ", A[j]);
+      printf("%llf ", A[j]);
    }
    printf("\n");
 }
 
-void print2DArray(double **A, int size){
+void print2DArray(long double **A, int size){
    int j;
    int i; 
    for(i = 0; i < size; i++){
       for(j = 0; j < size; j++){
-         printf("%lf ", A[i][j]);
+         printf("%llf ", A[i][j]);
       }
       printf("\n");
    }
