@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <mpi.h>
 #include <omp.h>
 
@@ -110,15 +111,10 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
    double allAns[n];
 
    MPI_Barrier(MPI_COMM_WORLD);
-   #pragma omp parralel num_threads(threadCount)
-   {
    do {
-      /*
       if(rank == 0){
-         print1DArray(Ans, n);
+         //print1DArray(Ans, n);
       }
-      */
-      # pragma omp for
       for(i = start; i < end; i++){
          allAns[i] = 0;
          for(j = 0; j < n; j++){
@@ -132,15 +128,23 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
 
       /* Send all your answers to the root node and recieve their answers */
       /* Not positive this is risk free */
-      # pragma omp for
       for(i = 0; i < np; i++){
          MPI_Bcast((allAns + (average * i + (n % np > i ? i : n % np))),
           average + (n % np > i ? 1 : 0),
           MPI_DOUBLE, i, MPI_COMM_WORLD);
       }
       MPI_Barrier(MPI_COMM_WORLD);
-   } while(!checkTolerance(tolerance, Ans, allAns, n));
-   }
+
+      toleranceMet = 1;
+      for(i = 0; i < n; i++){
+         gap = fabs(allAns[i] - Ans[i]);
+         if(gap < tolerance){
+            toleranceMet = 0;
+         }
+         Ans[i] = allAns[i];
+      }
+
+   } while(!toleranceMet);
    MPI_Barrier(MPI_COMM_WORLD);
 
    return;
@@ -178,7 +182,7 @@ int getSize(char *fileName){
 void readInMatrix(char *fileName, double *Arr[], double Ans[]){
    FILE *fp;
    int size, i, j;
-   fp = fopen("array.txt", "r");
+   fp = fopen(fileName, "r");
    if(fp == NULL){
       printf("ERROR OPENING FILE!");
       exit(1);
