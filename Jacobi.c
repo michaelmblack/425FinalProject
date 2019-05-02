@@ -3,7 +3,7 @@
 #include <string.h>
 
 int readInMatrix();
-void SerialJacobian(double **A, double *Ans, int n, double tolerance);
+void SerialJacobian(double **A, double *B, double *C, int n, double tolerance);
 void print1DArray(double *A, int size);
 void reArrangeArray(double **A, double *B, int size);
 void print2DArray(double **A, int size);
@@ -19,8 +19,8 @@ int main(){
    for(i = 0; i < size; i++){
       Answers[i] = 0;
    }
-   reArrangeArray(Arr, Ans, size);
-   SerialJacobian(Arr, Answers, size, err);
+   // reArrangeArray(Arr, Ans, size);
+   SerialJacobian(Arr, Answers, Ans, size, err);
 }
 
 
@@ -31,7 +31,7 @@ void reArrangeArray(double **A, double *B, int size){
       divideBy = A[i][i];
       A[i][i] = B[i] * -1;
       for(j = 0; j < size; j++){
-         A[i][j] = (-1 * A[i][j]) / divideBy;
+         A[i][j] = (-1.0 * A[i][j]) / divideBy;
       }
    }
 }
@@ -42,37 +42,36 @@ void reArrangeArray(double **A, double *B, int size){
  * n: size of matrix
  * err: acceptable error distance
  */
-void SerialJacobian(double **A, double *Ans, int n, double tolerance){
+void SerialJacobian(double **A, double *B, double *C, int n, double tolerance){
    int i, j;
    int toleranceMet;
    double gap;
    double *newAns = (double *) malloc( n * sizeof(double));
    int numRuns = 0;
+   double val;
    /* For every value in the matrix do the following */
    do {
       for(i = 0; i < n; i++){
-         newAns[i] = 0;
+         val = 0;
          for(j = 0; j < n; j++){
-            if(j == i){
-               newAns[i] += A[i][j];
-            }
-            else{
-               newAns[i] += A[i][j] * Ans[j];
+            if(j != i){
+               val += A[i][j] * B[j];
             }
          }
+         newAns[i] = (1.0 / A[i][i]) * (C[i] - val);
       }
       print1DArray(newAns, n);
       toleranceMet = 1;
       for(i = 0; i < n; i++){
-         gap = Ans[i] - newAns[i];
+         gap = B[i] - newAns[i];
          gap = (gap > 0 ? gap : gap * -1);
          if(gap > tolerance){
             toleranceMet = 0;
          }
-         Ans[i] = newAns[i];
+         B[i] = newAns[i];
       }
       numRuns++;
-   } while(!toleranceMet && numRuns < 1000);
+   } while(!toleranceMet && numRuns < 5);
 }
 
 void print2DArray(double **A, int size){
