@@ -153,7 +153,7 @@ void ParallelJacobian(long double *A[], long double Ans[], int n, long double to
       {
       numRuns++;
       }
-   } while(!toleranceMet && numRuns < 5);
+   } while(!toleranceMet && numRuns < 400);
    if(rank == 0){
       printf("%d\n", numRuns);
    }

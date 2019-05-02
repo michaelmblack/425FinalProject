@@ -71,7 +71,7 @@ void SerialJacobian(double **A, double *B, double *C, int n, double tolerance){
          B[i] = newAns[i];
       }
       numRuns++;
-   } while(!toleranceMet && numRuns < 5);
+   } while(!toleranceMet && numRuns < 500);
 }
 
 void print2DArray(double **A, int size){
