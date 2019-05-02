@@ -111,6 +111,7 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
 
    MPI_Barrier(MPI_COMM_WORLD);
    #pragma omp parralel num_threads(threadCount)
+   {
    do {
       /*
       if(rank == 0){
@@ -139,6 +140,7 @@ void ParallelJacobian(double *A[], double Ans[], int n, double tolerance, int np
       }
       MPI_Barrier(MPI_COMM_WORLD);
    } while(!checkTolerance(tolerance, Ans, allAns, n));
+   }
    MPI_Barrier(MPI_COMM_WORLD);
 
    return;
