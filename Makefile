@@ -1,4 +1,7 @@
 make:
-	gcc -o project Jacobi.c -lm
+	mpicc -o project ParallelJacobi.c -g -fopenmp -lm
 debug:
-	gcc -o debug Jacobi.c -g -lm
+	mpicc -o debug Jacobi.c -g
+serial:
+	gcc -o serial Jacobi.c
+

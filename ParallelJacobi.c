@@ -69,7 +69,8 @@ int main(){
 
    /* Print answers */
    if(rank == 0){
-      print1DArray(Ans, size);
+      printf("One number: %llf\n", Ans);
+      //print1DArray(Ans, size);
    }
 
    MPI_Barrier(MPI_COMM_WORLD);
@@ -153,7 +154,7 @@ void ParallelJacobian(long double *A[], long double Ans[], int n, long double to
       {
       numRuns++;
       }
-   } while(!toleranceMet && numRuns < 1000);
+   } while(!toleranceMet && numRuns < 5000);
    if(rank == 0){
       printf("%d\n", numRuns);
    }

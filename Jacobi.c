@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
 int readInMatrix();
 void SerialJacobian(double **A, double *Ans, int n, double tolerance);
@@ -47,8 +46,8 @@ void SerialJacobian(double **A, double *Ans, int n, double tolerance){
    int i, j;
    int toleranceMet;
    double gap;
-   double v;
    double *newAns = (double *) malloc( n * sizeof(double));
+   int numRuns = 0;
    /* For every value in the matrix do the following */
    do {
       for(i = 0; i < n; i++){
@@ -72,11 +71,9 @@ void SerialJacobian(double **A, double *Ans, int n, double tolerance){
          }
          Ans[i] = newAns[i];
       }
-   } while(!toleranceMet);
-
+      numRuns++;
+   } while(!toleranceMet && numRuns < 1000);
 }
-
-
 
 void print2DArray(double **A, int size){
    int i, j;
