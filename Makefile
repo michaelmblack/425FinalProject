@@ -3,5 +3,5 @@ make:
 debug:
 	mpicc -o debug Jacobi.c -g
 serial:
-	gcc -o serial Jacobi.c
+	gcc -o serial Jacobi.c -fopenmp
 
