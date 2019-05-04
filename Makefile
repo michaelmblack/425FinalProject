@@ -4,4 +4,6 @@ debug:
 	mpicc -o debug Jacobi.c -g
 serial:
 	gcc -o serial Jacobi.c -fopenmp
+gen:
+	gcc -o gen Generator.c
 
